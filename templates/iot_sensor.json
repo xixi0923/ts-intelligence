@@ -1,0 +1,17 @@
+{
+    "id": "iot_sensor",
+    "name": "IoT传感器监控模板",
+    "description": "温度/振动/压力/湿度/电流异常检测（设备故障预警）",
+    "features": [
+        {"name": "temperature", "unit": "°C", "normal_range": [20, 35]},
+        {"name": "vibration", "unit": "mm/s", "normal_range": [0.1, 2.0]},
+        {"name": "pressure", "unit": "kPa", "normal_range": [100, 120]},
+        {"name": "humidity", "unit": "%", "normal_range": [40, 70]},
+        {"name": "current", "unit": "A", "normal_range": [1.0, 5.0]}
+    ],
+    "rules": [
+        {"type": "spike", "threshold": 3.5, "level": "high"},
+        {"type": "trend", "window": 15, "threshold": 0.5, "level": "medium"},
+        {"type": "sustained", "count": 8, "level": "critical"}
+    ]
+}
