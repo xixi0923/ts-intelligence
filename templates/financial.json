@@ -1,0 +1,17 @@
+{
+    "id": "financial",
+    "name": "金融交易监控模板",
+    "description": "交易金额/频率/账户活跃度异常检测（反欺诈）",
+    "features": [
+        {"name": "transaction_amount", "unit": "CNY", "normal_range": [100, 5000]},
+        {"name": "frequency", "unit": "次/小时", "normal_range": [50, 200]},
+        {"name": "unique_accounts", "unit": "个", "normal_range": [20, 80]},
+        {"name": "avg_amount", "unit": "CNY", "normal_range": [500, 3000]},
+        {"name": "std_amount", "unit": "CNY", "normal_range": [100, 1500]}
+    ],
+    "rules": [
+        {"type": "spike", "threshold": 2.5, "level": "critical"},
+        {"type": "trend", "window": 8, "threshold": 0.6, "level": "high"},
+        {"type": "sustained", "count": 3, "level": "high"}
+    ]
+}
