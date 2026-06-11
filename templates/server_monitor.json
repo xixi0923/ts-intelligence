@@ -1,0 +1,17 @@
+{
+    "id": "server_monitor",
+    "name": "服务器监控模板",
+    "description": "服务器CPU/内存/磁盘IO/网络流量异常检测",
+    "features": [
+        {"name": "cpu_usage", "unit": "%", "normal_range": [30, 60]},
+        {"name": "memory_usage", "unit": "%", "normal_range": [40, 70]},
+        {"name": "disk_io", "unit": "MB/s", "normal_range": [10, 40]},
+        {"name": "network_in", "unit": "Mbps", "normal_range": [20, 50]},
+        {"name": "network_out", "unit": "Mbps", "normal_range": [15, 45]}
+    ],
+    "rules": [
+        {"type": "spike", "threshold": 3.0, "level": "high"},
+        {"type": "trend", "window": 10, "threshold": 0.8, "level": "medium"},
+        {"type": "sustained", "count": 5, "level": "medium"}
+    ]
+}
