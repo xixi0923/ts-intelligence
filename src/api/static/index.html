@@ -37,15 +37,18 @@ body {
 .header {
   background: var(--bg-primary);
   border-bottom: 1px solid var(--border);
-  padding: 12px 24px;
+  padding: 12px 20px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
   position: sticky;
   top: 0;
   z-index: 100;
 }
-.header h1 { font-size: 18px; font-weight: 600; color: var(--blue); }
+.header-left { display: flex; align-items: center; gap: 8px; flex-shrink: 0; white-space: nowrap; }
+.header h1 { font-size: 18px; font-weight: 600; color: var(--blue); white-space: nowrap; }
 .header .badge {
   background: var(--blue-light);
   color: var(--blue);
@@ -53,7 +56,9 @@ body {
   border-radius: 12px;
   font-size: 12px;
   font-weight: 500;
+  flex-shrink: 0;
 }
+.header .conn-status { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-secondary); white-space: nowrap; }
 .container { max-width: 1400px; margin: 0 auto; padding: 16px; }
 .grid { display: grid; gap: 16px; }
 .grid-2 { grid-template-columns: repeat(2, 1fr); }
@@ -61,7 +66,13 @@ body {
 .grid-4 { grid-template-columns: repeat(4, 1fr); }
 .grid-5 { grid-template-columns: repeat(5, 1fr); }
 @media (max-width: 1024px) { .grid-4, .grid-5 { grid-template-columns: repeat(2, 1fr); } .grid-3 { grid-template-columns: 1fr; } }
-@media (max-width: 640px) { .grid-2, .grid-3, .grid-4, .grid-5 { grid-template-columns: 1fr; } }
+@media (max-width: 640px) {
+  .grid-2, .grid-3, .grid-4, .grid-5 { grid-template-columns: 1fr; }
+  .header { padding: 10px 12px; }
+  .header-left { flex-wrap: wrap; }
+  .toolbar { margin-left: 0; width: 100%; }
+  .toolbar .btn, .toolbar select { flex: 1; min-width: 70px; }
+}
 .card {
   background: var(--bg-primary);
   border: 1px solid var(--border);
@@ -140,9 +151,10 @@ select, input {
 select:focus, input:focus { border-color: var(--blue); }
 .toolbar {
   display: flex;
-  gap: 12px;
+  gap: 8px;
   align-items: center;
   flex-wrap: wrap;
+  margin-left: auto;
 }
 .status-dot {
   width: 8px; height: 8px;
@@ -247,10 +259,10 @@ th { color: var(--text-secondary); font-weight: 500; font-size: 12px; }
 <body>
 
 <div class="header">
-  <div style="display:flex;align-items:center;gap:12px;">
+  <div class="header-left">
     <h1>TS-Intelligence</h1>
     <span class="badge">v1.0.0</span>
-    <span id="connStatus"><span class="status-dot status-offline" id="statusDot"></span> <span id="statusText">检测中...</span></span>
+    <span class="conn-status" id="connStatus"><span class="status-dot status-offline" id="statusDot"></span><span id="statusText">检测中...</span></span>
   </div>
   <div class="toolbar">
     <select id="scenarioSelect">
