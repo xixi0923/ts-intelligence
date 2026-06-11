@@ -1,0 +1,17 @@
+{
+    "id": "network_traffic",
+    "name": "网络流量监控模板",
+    "description": "入出流量/包数/连接数异常检测（DDoS/入侵检测）",
+    "features": [
+        {"name": "bytes_in", "unit": "bytes", "normal_range": [1000000, 5000000]},
+        {"name": "bytes_out", "unit": "bytes", "normal_range": [800000, 3000000]},
+        {"name": "packets_in", "unit": "个", "normal_range": [10000, 50000]},
+        {"name": "packets_out", "unit": "个", "normal_range": [8000, 40000]},
+        {"name": "connections", "unit": "个", "normal_range": [100, 500]}
+    ],
+    "rules": [
+        {"type": "spike", "threshold": 2.0, "level": "critical"},
+        {"type": "trend", "window": 5, "threshold": 0.9, "level": "high"},
+        {"type": "sustained", "count": 3, "level": "critical"}
+    ]
+}
