@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TS-Intelligence 时序智能分析平台</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8f9fa;
+  --bg-tertiary: #f0f1f3;
+  --text-primary: #1a1a2e;
+  --text-secondary: #6c757d;
+  --text-tertiary: #adb5bd;
+  --border: #e9ecef;
+  --blue: #378ADD;
+  --blue-light: #e6f1fb;
+  --green: #1D9E75;
+  --green-light: #e1f5ee;
+  --purple: #7F77DD;
+  --purple-light: #eeedfe;
+  --amber: #BA7517;
+  --amber-light: #faeeda;
+  --red: #E24B4A;
+  --red-light: #fcebEB;
+  --radius: 8px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  line-height: 1.6;
+}
+.header {
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.header h1 { font-size: 18px; font-weight: 600; color: var(--blue); }
+.header .badge {
+  background: var(--blue-light);
+  color: var(--blue);
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.container { max-width: 1400px; margin: 0 auto; padding: 16px; }
+.grid { display: grid; gap: 16px; }
+.grid-2 { grid-template-columns: repeat(2, 1fr); }
+.grid-3 { grid-template-columns: repeat(3, 1fr); }
+.grid-4 { grid-template-columns: repeat(4, 1fr); }
+.grid-5 { grid-template-columns: repeat(5, 1fr); }
+@media (max-width: 1024px) { .grid-4, .grid-5 { grid-template-columns: repeat(2, 1fr); } .grid-3 { grid-template-columns: 1fr; } }
+@media (max-width: 640px) { .grid-2, .grid-3, .grid-4, .grid-5 { grid-template-columns: 1fr; } }
+.card {
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  box-shadow: var(--shadow);
+}
+.card-title {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+.card-value {
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+.card-sub {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  margin-top: 4px;
+}
+.section { margin-top: 20px; }
+.section-title {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.section-title .dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.btn {
+  padding: 8px 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-weight: 500;
+}
+.btn:hover { background: var(--bg-secondary); }
+.btn-primary {
+  background: var(--blue);
+  color: white;
+  border-color: var(--blue);
+}
+.btn-primary:hover { background: #2d6fbf; }
+.btn-success {
+  background: var(--green);
+  color: white;
+  border-color: var(--green);
+}
+.btn-danger {
+  background: var(--red);
+  color: white;
+  border-color: var(--red);
+}
+.btn-sm { padding: 4px 12px; font-size: 12px; }
+select, input {
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  font-size: 13px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  outline: none;
+}
+select:focus, input:focus { border-color: var(--blue); }
+.toolbar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.status-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 4px;
+}
+.status-online { background: var(--green); }
+.status-offline { background: var(--red); }
+.alert-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 500;
+}
+.alert-normal { background: var(--green-light); color: var(--green); }
+.alert-low { background: var(--blue-light); color: var(--blue); }
+.alert-medium { background: var(--amber-light); color: var(--amber); }
+.alert-high { background: var(--red-light); color: var(--red); }
+.alert-critical { background: #501313; color: #f7c1c1; }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+th, td {
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+th { color: var(--text-secondary); font-weight: 500; font-size: 12px; }
+.progress-bar {
+  height: 6px;
+  background: var(--bg-tertiary);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s;
+}
+.tab-bar {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid var(--border);
+  margin-bottom: 16px;
+}
+.tab {
+  padding: 8px 20px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--text-secondary);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: all 0.15s;
+}
+.tab:hover { color: var(--text-primary); }
+.tab.active { color: var(--blue); border-bottom-color: var(--blue); }
+.log-entry {
+  padding: 8px 12px;
+  border-left: 3px solid var(--border);
+  margin-bottom: 8px;
+  font-size: 12px;
+  background: var(--bg-secondary);
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+.log-time { color: var(--text-tertiary); font-family: monospace; }
+.chip {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  margin-right: 4px;
+}
+.chip-blue { background: var(--blue-light); color: var(--blue); }
+.chip-purple { background: var(--purple-light); color: var(--purple); }
+.chip-green { background: var(--green-light); color: var(--green); }
+.chip-amber { background: var(--amber-light); color: var(--amber); }
+.chip-red { background: var(--red-light); color: var(--red); }
+.hidden { display: none !important; }
+#toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  padding: 12px 20px;
+  border-radius: var(--radius);
+  color: white;
+  font-size: 13px;
+  z-index: 999;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+#toast.show { opacity: 1; }
+#toast.success { background: var(--green); }
+#toast.error { background: var(--red); }
+#toast.info { background: var(--blue); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div style="display:flex;align-items:center;gap:12px;">
+    <h1>TS-Intelligence</h1>
+    <span class="badge">v1.0.0</span>
+    <span id="connStatus"><span class="status-dot status-offline" id="statusDot"></span> <span id="statusText">检测中...</span></span>
+  </div>
+  <div class="toolbar">
+    <select id="scenarioSelect">
+      <option value="server_monitor">服务器监控</option>
+      <option value="financial">金融交易</option>
+      <option value="iot_sensor">IoT传感器</option>
+      <option value="network_traffic">网络流量</option>
+    </select>
+    <button class="btn btn-primary" id="btnTrain">训练模型</button>
+    <button class="btn btn-success" id="btnDetect">实时检测</button>
+    <button class="btn" id="btnGenerate">生成数据</button>
+  </div>
+</div>
+
+<div class="container">
+  <!-- 指标卡片 -->
+  <div class="grid grid-5" id="metricsRow">
+    <div class="card">
+      <div class="card-title">模型状态</div>
+      <div class="card-value" id="metricModel" style="color:var(--red);">未训练</div>
+      <div class="card-sub" id="metricModelSub">请先训练模型</div>
+    </div>
+    <div class="card">
+      <div class="card-title">异常分数</div>
+      <div class="card-value" id="metricScore">--</div>
+      <div class="card-sub" id="metricScoreSub">最近一次检测</div>
+    </div>
+    <div class="card">
+      <div class="card-title">告警级别</div>
+      <div class="card-value" id="metricAlert">--</div>
+      <div class="card-sub" id="metricAlertSub">融合判定结果</div>
+    </div>
+    <div class="card">
+      <div class="card-title">检测窗口</div>
+      <div class="card-value" id="metricWindows">0</div>
+      <div class="card-sub">滑动窗口数量</div>
+    </div>
+    <div class="card">
+      <div class="card-title">训练损失</div>
+      <div class="card-value" id="metricLoss">--</div>
+      <div class="card-sub" id="metricLossSub">最终损失值</div>
+    </div>
+  </div>
+
+  <!-- Tab导航 -->
+  <div class="tab-bar" style="margin-top:20px;">
+    <div class="tab active" data-tab="chart">时序图表</div>
+    <div class="tab" data-tab="analysis">分析结果</div>
+    <div class="tab" data-tab="alerts">告警中心</div>
+    <div class="tab" data-tab="training">训练监控</div>
+    <div class="tab" data-tab="pipeline">Pipeline</div>
+  </div>
+
+  <!-- 时序图表 -->
+  <div id="tabChart" class="tab-content">
+    <div class="grid grid-2">
+      <div class="card">
+        <div class="card-title">时序数据 + 异常标注</div>
+        <div style="position:relative;height:320px;">
+          <canvas id="chartTimeSeries" role="img" aria-label="时序数据与异常标注图">加载中...</canvas>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">异常分数热力图</div>
+        <div style="position:relative;height:320px;">
+          <canvas id="chartAnomalyScore" role="img" aria-label="异常分数分布图">加载中...</canvas>
+        </div>
+      </div>
+    </div>
+    <div class="grid grid-2" style="margin-top:16px;">
+      <div class="card">
+        <div class="card-title">特征分布</div>
+        <div style="position:relative;height:260px;">
+          <canvas id="chartFeatures" role="img" aria-label="特征分布图">加载中...</canvas>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">重建误差分析</div>
+        <div style="position:relative;height:260px;">
+          <canvas id="chartReconError" role="img" aria-label="重建误差分析图">加载中...</canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 分析结果 -->
+  <div id="tabAnalysis" class="tab-content hidden">
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-title">检测摘要</div>
+      <div class="grid grid-4" id="summaryCards">
+        <div><strong>总窗口数:</strong> <span id="sumTotal">--</span></div>
+        <div><strong>异常窗口:</strong> <span id="sumAnomaly" style="color:var(--red);">--</span></div>
+        <div><strong>异常比例:</strong> <span id="sumRatio">--</span></div>
+        <div><strong>阈值:</strong> <span id="sumThreshold">--</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">逐窗口检测结果</div>
+      <div style="max-height:400px;overflow-y:auto;">
+        <table id="resultTable">
+          <thead><tr><th>窗口</th><th>时间范围</th><th>异常分数</th><th>是否异常</th><th>LSTM分数</th><th>TF分数</th></tr></thead>
+          <tbody id="resultBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- 告警中心 -->
+  <div id="tabAlerts" class="tab-content hidden">
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-title">告警统计</div>
+      <div class="grid grid-4">
+        <div><span class="alert-badge alert-low">低</span> <span id="alertLow">0</span></div>
+        <div><span class="alert-badge alert-medium">中</span> <span id="alertMedium">0</span></div>
+        <div><span class="alert-badge alert-high">高</span> <span id="alertHigh">0</span></div>
+        <div><span class="alert-badge alert-critical">严重</span> <span id="alertCritical">0</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">告警列表</div>
+      <div id="alertList" style="max-height:500px;overflow-y:auto;">
+        <div style="color:var(--text-tertiary);text-align:center;padding:40px;">暂无告警</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 训练监控 -->
+  <div id="tabTraining" class="tab-content hidden">
+    <div class="grid grid-2">
+      <div class="card">
+        <div class="card-title">训练损失曲线</div>
+        <div style="position:relative;height:300px;">
+          <canvas id="chartTrainLoss" role="img" aria-label="训练损失曲线">加载中...</canvas>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">训练参数</div>
+        <div style="padding:8px 0;">
+          <div style="margin-bottom:12px;"><strong>场景:</strong> <span id="trainScenario">--</span></div>
+          <div style="margin-bottom:12px;"><strong>训练轮数:</strong> <span id="trainEpochs">--</span></div>
+          <div style="margin-bottom:12px;"><strong>最终训练损失:</strong> <span id="trainFinalLoss">--</span></div>
+          <div style="margin-bottom:12px;"><strong>最终验证损失:</strong> <span id="trainFinalValLoss">--</span></div>
+          <div style="margin-bottom:12px;"><strong>异常阈值:</strong> <span id="trainThreshold">--</span></div>
+          <div style="margin-bottom:12px;"><strong>训练时间:</strong> <span id="trainTime">--</span></div>
+          <div><strong>模型架构:</strong></div>
+          <div style="margin-top:4px;font-size:12px;color:var(--text-secondary);">
+            <span class="chip chip-purple">LSTM-AE</span>
+            <span class="chip chip-blue">Transformer-AE</span>
+            <span class="chip chip-green">集成融合</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pipeline -->
+  <div id="tabPipeline" class="tab-content hidden">
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-title">6阶段处理Pipeline</div>
+      <div class="grid grid-3" style="gap:12px;">
+        <div style="border:1px solid var(--border);border-radius:var(--radius);padding:12px;text-align:center;">
+          <div class="chip chip-blue">1</div>
+          <div style="font-weight:500;margin:4px 0;">数据加载</div>
+          <div style="font-size:12px;color:var(--text-secondary);">合成/CSV/流式</div>
+        </div>
+        <div style="border:1px solid var(--border);border-radius:var(--radius);padding:12px;text-align:center;">
+          <div class="chip chip-green">2</div>
+          <div style="font-weight:500;margin:4px 0;">预处理</div>
+          <div style="font-size:12px;color:var(--text-secondary);">标准化+滑窗</div>
+        </div>
+        <div style="border:1px solid var(--border);border-radius:var(--radius);padding:12px;text-align:center;">
+          <div class="chip chip-purple">3</div>
+          <div style="font-weight:500;margin:4px 0;">特征提取</div>
+          <div style="font-size:12px;color:var(--text-secondary);">统计+FFT+小波</div>
+        </div>
+        <div style="border:1px solid var(--border);border-radius:var(--radius);padding:12px;text-align:center;">
+          <div class="chip chip-amber">4</div>
+          <div style="font-weight:500;margin:4px 0;">模型推理</div>
+          <div style="font-size:12px;color:var(--text-secondary);">LSTM-AE + TF-AE</div>
+        </div>
+        <div style="border:1px solid var(--border);border-radius:var(--radius);padding:12px;text-align:center;">
+          <div class="chip chip-red">5</div>
+          <div style="font-weight:500;margin:4px 0;">异常评分</div>
+          <div style="font-size:12px;color:var(--text-secondary);">加权融合+阈值</div>
+        </div>
+        <div style="border:1px solid var(--border);border-radius:var(--radius);padding:12px;text-align:center;">
+          <div class="chip chip-red">6</div>
+          <div style="font-weight:500;margin:4px 0;">告警决策</div>
+          <div style="font-size:12px;color:var(--text-secondary);">规则+ML双引擎</div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Pipeline性能时间线</div>
+      <div id="pipelineTimeline" style="padding:8px 0;">
+        <div style="color:var(--text-tertiary);text-align:center;padding:20px;">运行Pipeline后显示</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ===== 全局状态 =====
+const STATE = {
+  backendOnline: false,
+  isTraining: false,
+  currentData: null,
+  modelTrained: false,
+  charts: {},
+  trainHistory: [],
+  detectionResults: [],
+  alerts: [],
+};
+
+const API_BASE = "";  // 同源
+
+// ===== 工具函数 =====
+function showToast(msg, type = "info") {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.className = `show ${type}`;
+  setTimeout(() => t.className = "", 3000);
+}
+
+function formatNum(n, digits = 4) {
+  if (n === null || n === undefined) return "--";
+  return Number(n).toFixed(digits);
+}
+
+// ===== 连接检测 =====
+async function checkBackend() {
+  try {
+    const r = await fetch(`${API_BASE}/health`, { signal: AbortSignal.timeout(3000) });
+    if (r.ok) {
+      const d = await r.json();
+      STATE.backendOnline = true;
+      STATE.modelTrained = d.is_trained;
+      document.getElementById("statusDot").className = "status-dot status-online";
+      document.getElementById("statusText").textContent = "已连接";
+      updateModelStatus();
+      return true;
+    }
+  } catch(e) {}
+  STATE.backendOnline = false;
+  document.getElementById("statusDot").className = "status-dot status-offline";
+  document.getElementById("statusText").textContent = "离线模式";
+  return false;
+}
+
+function updateModelStatus() {
+  const el = document.getElementById("metricModel");
+  const sub = document.getElementById("metricModelSub");
+  if (STATE.modelTrained) {
+    el.textContent = "已就绪";
+    el.style.color = "var(--green)";
+    sub.textContent = "模型已训练完成";
+  } else {
+    el.textContent = "未训练";
+    el.style.color = "var(--red)";
+    sub.textContent = "请先训练模型";
+  }
+}
+
+// ===== Tab切换 =====
+document.querySelectorAll(".tab").forEach(tab => {
+  tab.addEventListener("click", () => {
+    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+    document.querySelectorAll(".tab-content").forEach(c => c.classList.add("hidden"));
+    tab.classList.add("active");
+    const target = tab.dataset.tab;
+    document.getElementById("tab" + target.charAt(0).toUpperCase() + target.slice(1)).classList.remove("hidden");
+  });
+});
+
+// ===== 生成合成数据 =====
+async function generateData() {
+  const scenario = document.getElementById("scenarioSelect").value;
+  if (STATE.backendOnline) {
+    try {
+      const r = await fetch(`${API_BASE}/api/generate?scenario=${scenario}&length=1000&anomaly_ratio=0.1`);
+      STATE.currentData = await r.json();
+    } catch(e) {
+      STATE.currentData = generateOfflineData(scenario);
+    }
+  } else {
+    STATE.currentData = generateOfflineData(scenario);
+  }
+  renderTimeSeriesChart();
+  renderFeatureChart();
+  showToast("数据已生成", "success");
+}
+
+// 离线数据生成
+function generateOfflineData(scenario) {
+  const configs = {
+    server_monitor: { name: "服务器监控", features: ["cpu_usage","memory_usage","disk_io","network_in","network_out"], ranges: [[30,60],[40,70],[10,40],[20,50],[15,45]] },
+    financial: { name: "金融交易", features: ["transaction_amount","frequency","unique_accounts","avg_amount","std_amount"], ranges: [[100,5000],[50,200],[20,80],[500,3000],[100,1500]] },
+    iot_sensor: { name: "IoT传感器", features: ["temperature","vibration","pressure","humidity","current"], ranges: [[20,35],[0.1,2],[100,120],[40,70],[1,5]] },
+    network_traffic: { name: "网络流量", features: ["bytes_in","bytes_out","packets_in","packets_out","connections"], ranges: [[1e6,5e6],[8e5,3e6],[1e4,5e4],[8e3,4e4],[100,500]] },
+  };
+  const cfg = configs[scenario] || configs.server_monitor;
+  const length = 1000;
+  const data = [];
+  const labels = new Array(length).fill(0);
+  const timestamps = Array.from({length}, (_, i) => i);
+
+  for (let t = 0; t < length; t++) {
+    const row = [];
+    for (let f = 0; f < cfg.features.length; f++) {
+      const [lo, hi] = cfg.ranges[f];
+      const mid = (lo + hi) / 2;
+      const amp = (hi - lo) / 2;
+      const daily = amp * 0.3 * Math.sin(2 * Math.PI * t / 240);
+      const weekly = amp * 0.1 * Math.sin(2 * Math.PI * t / 1680);
+      const noise = (Math.random() - 0.5) * amp * 0.1;
+      row.push(mid + daily + weekly + noise);
+    }
+    data.push(row);
+  }
+
+  // 注入异常
+  const anomalyTypes = ["spike","drift","noise","dropout","oscillation"];
+  const nAnomaly = 80;
+  let placed = 0, attempts = 0;
+  while (placed < nAnomaly && attempts < 50) {
+    const segLen = Math.min(5 + Math.floor(Math.random() * 15), nAnomaly - placed);
+    const start = 10 + Math.floor(Math.random() * (length - segLen - 20));
+    const type = anomalyTypes[Math.floor(Math.random() * 5)];
+    for (let t = start; t < start + segLen && t < length; t++) {
+      labels[t] = 1;
+      for (let f = 0; f < cfg.features.length; f++) {
+        const amp = (cfg.ranges[f][1] - cfg.ranges[f][0]) / 2;
+        if (type === "spike") data[t][f] += amp * (2 + Math.random() * 3);
+        else if (type === "drift") data[t][f] += amp * 0.5 * (t - start) / segLen;
+        else if (type === "noise") data[t][f] += (Math.random() - 0.5) * amp * 2;
+        else if (type === "oscillation") data[t][f] += amp * Math.sin(2 * Math.PI * (t - start));
+      }
+    }
+    placed += segLen;
+    attempts++;
+  }
+
+  return { scenario, length, n_features: cfg.features.length, feature_names: cfg.features, anomaly_ratio: 0.1, data, labels, timestamps, anomaly_types: anomalyTypes };
+}
+
+// ===== 图表渲染 =====
+function renderTimeSeriesChart() {
+  if (!STATE.currentData) return;
+  const d = STATE.currentData;
+  const ctx = document.getElementById("chartTimeSeries").getContext("2d");
+
+  if (STATE.charts.timeSeries) STATE.charts.timeSeries.destroy();
+
+  // 只显示前2个特征（避免太拥挤）
+  const showFeatures = d.feature_names.slice(0, 2);
+  const datasets = showFeatures.map((name, i) => ({
+    label: name,
+    data: d.data.map((row, t) => ({ x: t, y: row[i] })),
+    borderColor: i === 0 ? "#378ADD" : "#1D9E75",
+    backgroundColor: i === 0 ? "rgba(55,138,221,0.1)" : "rgba(29,158,117,0.1)",
+    borderWidth: 1.5,
+    pointRadius: 0,
+    tension: 0.3,
+    fill: false,
+  }));
+
+  // 异常区域高亮
+  const anomalyPoints = [];
+  for (let t = 0; t < d.labels.length; t++) {
+    if (d.labels[t] === 1) anomalyPoints.push({ x: t, y: d.data[t][0] });
+  }
+  datasets.push({
+    label: "异常点",
+    data: anomalyPoints,
+    borderColor: "#E24B4A",
+    backgroundColor: "rgba(226,75,74,0.6)",
+    pointRadius: 3,
+    showLine: false,
+  });
+
+  STATE.charts.timeSeries = new Chart(ctx, {
+    type: "scatter",
+    data: { datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: { title: { display: true, text: "时间步" } },
+        y: { title: { display: true, text: "数值" } },
+      },
+      plugins: { legend: { display: true, position: "top" } },
+    },
+  });
+}
+
+function renderAnomalyScoreChart() {
+  const ctx = document.getElementById("chartAnomalyScore").getContext("2d");
+  if (STATE.charts.anomalyScore) STATE.charts.anomalyScore.destroy();
+
+  if (!STATE.detectionResults.length) return;
+
+  const results = STATE.detectionResults;
+  const normalData = results.filter(r => !r.is_anomaly).map(r => ({ x: r.window_start || r.sample_idx, y: r.anomaly_score }));
+  const anomalyData = results.filter(r => r.is_anomaly).map(r => ({ x: r.window_start || r.sample_idx, y: r.anomaly_score }));
+  const threshold = results[0]?.threshold || 0.5;
+
+  STATE.charts.anomalyScore = new Chart(ctx, {
+    type: "scatter",
+    data: {
+      datasets: [
+        {
+          label: "正常",
+          data: normalData,
+          backgroundColor: "rgba(29,158,117,0.5)",
+          pointRadius: 4,
+          showLine: false,
+        },
+        {
+          label: "异常",
+          data: anomalyData,
+          backgroundColor: "rgba(226,75,74,0.7)",
+          pointRadius: 5,
+          showLine: false,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: { title: { display: true, text: "窗口位置" } },
+        y: { title: { display: true, text: "异常分数" } },
+      },
+      plugins: {
+        annotation: {},
+        legend: { display: true },
+      },
+    },
+  });
+}
+
+function renderFeatureChart() {
+  if (!STATE.currentData) return;
+  const d = STATE.currentData;
+  const ctx = document.getElementById("chartFeatures").getContext("2d");
+  if (STATE.charts.features) STATE.charts.features.destroy();
+
+  // 显示各特征的均值和标准差
+  const means = [];
+  const stds = [];
+  for (let f = 0; f < d.n_features; f++) {
+    const vals = d.data.map(row => row[f]);
+    const m = vals.reduce((a, b) => a + b, 0) / vals.length;
+    const s = Math.sqrt(vals.reduce((a, b) => a + (b - m) ** 2, 0) / vals.length);
+    means.push(m);
+    stds.push(s);
+  }
+
+  STATE.charts.features = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: d.feature_names,
+      datasets: [
+        { label: "均值", data: means, backgroundColor: "rgba(55,138,221,0.6)" },
+        { label: "标准差", data: stds, backgroundColor: "rgba(127,119,221,0.6)" },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: { x: { ticks: { maxRotation: 45 } } },
+      plugins: { legend: { display: true } },
+    },
+  });
+}
+
+function renderReconErrorChart() {
+  if (!STATE.detectionResults.length) return;
+  const ctx = document.getElementById("chartReconError").getContext("2d");
+  if (STATE.charts.reconError) STATE.charts.reconError.destroy();
+
+  const results = STATE.detectionResults;
+  const scores = results.map(r => r.anomaly_score);
+  const lstmScores = results.map(r => r.lstm_score || 0);
+  const tfScores = results.map(r => r.transformer_score || 0);
+  const labels = results.map((_, i) => i);
+
+  STATE.charts.reconError = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels,
+      datasets: [
+        { label: "集成分数", data: scores, borderColor: "#E24B4A", borderWidth: 2, pointRadius: 0, fill: false },
+        { label: "LSTM-AE", data: lstmScores, borderColor: "#7F77DD", borderWidth: 1, pointRadius: 0, borderDash: [4,4], fill: false },
+        { label: "TF-AE", data: tfScores, borderColor: "#378ADD", borderWidth: 1, pointRadius: 0, borderDash: [4,4], fill: false },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: { x: { title: { display: true, text: "窗口" } }, y: { title: { display: true, text: "分数" } } },
+      plugins: { legend: { display: true } },
+    },
+  });
+}
+
+function renderTrainLossChart() {
+  const ctx = document.getElementById("chartTrainLoss").getContext("2d");
+  if (STATE.charts.trainLoss) STATE.charts.trainLoss.destroy();
+
+  const h = STATE.trainHistory;
+  if (!h.length) return;
+
+  STATE.charts.trainLoss = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels: h.map(e => e.epoch),
+      datasets: [
+        { label: "训练损失", data: h.map(e => e.train_loss), borderColor: "#378ADD", borderWidth: 2, fill: false },
+        { label: "验证损失", data: h.map(e => e.val_loss).filter(v => v !== null), borderColor: "#1D9E75", borderWidth: 2, borderDash: [4,4], fill: false },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: { x: { title: { display: true, text: "轮数" } }, y: { title: { display: true, text: "损失" } } },
+      plugins: { legend: { display: true } },
+    },
+  });
+}
+
+// ===== 训练 =====
+async function trainModel() {
+  if (STATE.isTraining) return;
+  STATE.isTraining = true;
+  const btn = document.getElementById("btnTrain");
+  btn.textContent = "训练中...";
+  btn.disabled = true;
+
+  const scenario = document.getElementById("scenarioSelect").value;
+
+  try {
+    let result;
+    if (STATE.backendOnline) {
+      const r = await fetch(`${API_BASE}/api/train`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scenario, num_epochs: 20, learning_rate: 0.001, batch_size: 32 }),
+      });
+      result = await r.json();
+    } else {
+      // 离线模拟训练
+      result = simulateTraining(scenario);
+    }
+
+    STATE.trainHistory = result.history || [];
+    STATE.modelTrained = true;
+
+    // 更新UI
+    updateModelStatus();
+    renderTrainLossChart();
+    document.getElementById("metricLoss").textContent = formatNum(result.final_train_loss);
+    document.getElementById("metricLossSub").textContent = `阈值: ${formatNum(result.threshold)}`;
+    document.getElementById("trainScenario").textContent = result.scenario || scenario;
+    document.getElementById("trainEpochs").textContent = result.epochs_trained || "--";
+    document.getElementById("trainFinalLoss").textContent = formatNum(result.final_train_loss);
+    document.getElementById("trainFinalValLoss").textContent = formatNum(result.final_val_loss);
+    document.getElementById("trainThreshold").textContent = formatNum(result.threshold);
+    document.getElementById("trainTime").textContent = (result.training_time || 0).toFixed(1) + "s";
+
+    // 切换到训练Tab
+    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+    document.querySelectorAll(".tab-content").forEach(c => c.classList.add("hidden"));
+    document.querySelector('[data-tab="training"]').classList.add("active");
+    document.getElementById("tabTraining").classList.remove("hidden");
+
+    showToast("模型训练完成！", "success");
+  } catch(e) {
+    showToast("训练失败: " + e.message, "error");
+  } finally {
+    STATE.isTraining = false;
+    btn.textContent = "训练模型";
+    btn.disabled = false;
+  }
+}
+
+function simulateTraining(scenario) {
+  const epochs = 20;
+  const history = [];
+  let trainLoss = 0.5;
+  let valLoss = 0.52;
+  for (let i = 1; i <= epochs; i++) {
+    trainLoss *= 0.88;
+    valLoss *= 0.86;
+    history.push({ epoch: i, train_loss: trainLoss, val_loss: valLoss });
+  }
+  return {
+    epochs_trained: epochs,
+    final_train_loss: trainLoss,
+    final_val_loss: valLoss,
+    threshold: 0.05 + Math.random() * 0.03,
+    training_time: 12.5 + Math.random() * 5,
+    scenario,
+    history,
+  };
+}
+
+// ===== 检测 =====
+async function detectAnomaly() {
+  if (!STATE.modelTrained) {
+    showToast("请先训练模型", "error");
+    return;
+  }
+  if (!STATE.currentData) {
+    showToast("请先生成数据", "error");
+    return;
+  }
+
+  const btn = document.getElementById("btnDetect");
+  btn.textContent = "检测中...";
+  btn.disabled = true;
+
+  try {
+    let result;
+    if (STATE.backendOnline) {
+      const r = await fetch(`${API_BASE}/api/predict`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ data: STATE.currentData.data }),
+      });
+      result = await r.json();
+    } else {
+      result = simulateDetection();
+    }
+
+    STATE.detectionResults = result.results || [];
+    STATE.alerts = result.alerts || [];
+
+    // 更新指标
+    const maxScore = Math.max(...STATE.detectionResults.map(r => r.anomaly_score));
+    const anomalyCount = STATE.detectionResults.filter(r => r.is_anomaly).length;
+    const threshold = STATE.detectionResults[0]?.threshold || 0;
+
+    document.getElementById("metricScore").textContent = formatNum(maxScore);
+    document.getElementById("metricScoreSub").textContent = `阈值: ${formatNum(threshold)}`;
+    document.getElementById("metricWindows").textContent = STATE.detectionResults.length;
+
+    // 确定告警级别
+    let alertLevel = "正常";
+    let alertClass = "alert-normal";
+    if (maxScore > 0.9) { alertLevel = "严重"; alertClass = "alert-critical"; }
+    else if (maxScore > 0.7) { alertLevel = "高"; alertClass = "alert-high"; }
+    else if (maxScore > 0.5) { alertLevel = "中"; alertClass = "alert-medium"; }
+    else if (maxScore > 0.3) { alertLevel = "低"; alertClass = "alert-low"; }
+    document.getElementById("metricAlert").innerHTML = `<span class="alert-badge ${alertClass}">${alertLevel}</span>`;
+    document.getElementById("metricAlertSub").textContent = `ML+规则融合判定`;
+
+    // 渲染图表
+    renderAnomalyScoreChart();
+    renderReconErrorChart();
+    updateAnalysisTab();
+    updateAlertTab();
+
+    showToast(`检测完成！发现 ${anomalyCount} 个异常窗口`, anomalyCount > 0 ? "error" : "success");
+  } catch(e) {
+    showToast("检测失败: " + e.message, "error");
+  } finally {
+    btn.textContent = "实时检测";
+    btn.disabled = false;
+  }
+}
+
+function simulateDetection() {
+  const nWindows = 100;
+  const results = [];
+  for (let i = 0; i < nWindows; i++) {
+    const isAnomaly = Math.random() < 0.12;
+    const lstmScore = isAnomaly ? 0.5 + Math.random() * 0.5 : Math.random() * 0.3;
+    const tfScore = isAnomaly ? 0.4 + Math.random() * 0.5 : Math.random() * 0.25;
+    const ensembleScore = 0.6 * lstmScore + 0.4 * tfScore;
+    results.push({
+      sample_idx: i,
+      window_start: i * 8,
+      window_end: i * 8 + 64,
+      anomaly_score: ensembleScore,
+      is_anomaly: isAnomaly,
+      threshold: 0.35,
+      lstm_score: lstmScore,
+      transformer_score: tfScore,
+    });
+  }
+  const alerts = results.filter(r => r.is_anomaly).slice(0, 8).map(r => ({
+    timestamp: r.window_start,
+    level: r.anomaly_score > 0.7 ? "高" : r.anomaly_score > 0.5 ? "中" : "低",
+    ml_score: r.anomaly_score,
+    rule_score: Math.random() * 0.3,
+    combined_score: r.anomaly_score * 0.7 + Math.random() * 0.3,
+    message: `窗口${r.sample_idx}异常分数: ${r.anomaly_score.toFixed(3)}`,
+  }));
+  return { n_windows: nWindows, results, alerts };
+}
+
+function updateAnalysisTab() {
+  const results = STATE.detectionResults;
+  const anomalyCount = results.filter(r => r.is_anomaly).length;
+  const threshold = results[0]?.threshold || 0;
+
+  document.getElementById("sumTotal").textContent = results.length;
+  document.getElementById("sumAnomaly").textContent = anomalyCount;
+  document.getElementById("sumRatio").textContent = (anomalyCount / results.length * 100).toFixed(1) + "%";
+  document.getElementById("sumThreshold").textContent = formatNum(threshold);
+
+  const tbody = document.getElementById("resultBody");
+  tbody.innerHTML = "";
+  results.forEach(r => {
+    const tr = document.createElement("tr");
+    const cls = r.is_anomaly ? 'style="color:var(--red);font-weight:500;"' : "";
+    tr.innerHTML = `
+      <td ${cls}>${r.sample_idx}</td>
+      <td>${r.window_start || 0} - ${r.window_end || 0}</td>
+      <td ${cls}>${formatNum(r.anomaly_score)}</td>
+      <td>${r.is_anomaly ? '<span class="alert-badge alert-high">异常</span>' : '<span class="alert-badge alert-normal">正常</span>'}</td>
+      <td>${formatNum(r.lstm_score)}</td>
+      <td>${formatNum(r.transformer_score)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function updateAlertTab() {
+  const alerts = STATE.alerts;
+  const low = alerts.filter(a => a.level === "低").length;
+  const medium = alerts.filter(a => a.level === "中").length;
+  const high = alerts.filter(a => a.level === "高").length;
+  const critical = alerts.filter(a => a.level === "严重").length;
+
+  document.getElementById("alertLow").textContent = low;
+  document.getElementById("alertMedium").textContent = medium;
+  document.getElementById("alertHigh").textContent = high;
+  document.getElementById("alertCritical").textContent = critical;
+
+  const list = document.getElementById("alertList");
+  if (!alerts.length) {
+    list.innerHTML = '<div style="color:var(--text-tertiary);text-align:center;padding:40px;">暂无告警</div>';
+    return;
+  }
+
+  list.innerHTML = alerts.map(a => {
+    const cls = a.level === "严重" ? "alert-critical" : a.level === "高" ? "alert-high" : a.level === "中" ? "alert-medium" : "alert-low";
+    return `<div class="log-entry" style="border-left-color:${a.level === '严重' || a.level === '高' ? 'var(--red)' : a.level === '中' ? 'var(--amber)' : 'var(--blue)'};">
+      <span class="log-time">T=${a.timestamp}</span>
+      <span class="alert-badge ${cls}">${a.level}</span>
+      ML: ${formatNum(a.ml_score)} | 规则: ${formatNum(a.rule_score)} | 融合: ${formatNum(a.combined_score)}
+      <div style="margin-top:4px;color:var(--text-secondary);">${a.message}</div>
+    </div>`;
+  }).join("");
+}
+
+// ===== 事件绑定 =====
+document.getElementById("btnTrain").addEventListener("click", trainModel);
+document.getElementById("btnDetect").addEventListener("click", detectAnomaly);
+document.getElementById("btnGenerate").addEventListener("click", generateData);
+
+// ===== 初始化 =====
+(async () => {
+  await checkBackend();
+  // 自动生成数据
+  generateData();
+})();
+</script>
+</body>
+</html>
