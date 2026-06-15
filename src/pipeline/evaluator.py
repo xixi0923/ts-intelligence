@@ -2,7 +2,7 @@
 模型评估 - 精确率/召回率/F1/ROC-AUC等指标
 """
 import numpy as np
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 
 class ModelEvaluator:
@@ -115,7 +115,3 @@ class ModelEvaluator:
                 best_metrics = metrics
 
         return float(best_threshold), best_metrics
-
-
-# 导入缺失的类型
-from typing import Tuple

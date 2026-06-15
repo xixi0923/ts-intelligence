@@ -90,7 +90,6 @@ class LSTMAutoencoder(nn.Module):
         返回:
             error: (batch, seq_len, input_dim)
         """
-        self.eval()
         with torch.no_grad():
             reconstructed, _ = self.forward(x)
             error = (x - reconstructed) ** 2

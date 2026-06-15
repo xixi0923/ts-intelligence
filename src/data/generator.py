@@ -160,9 +160,9 @@ class SyntheticDataGenerator:
             result += rng.normal(0, noise_level, length)
 
         elif anomaly_type == "dropout":
-            # 信号丢失: 值突然归零或固定
+            # 信号丢失: 值突然归零
             drop_point = length // 3
-            result[drop_point:] = result[drop_point] * 0.1
+            result[drop_point:] = 0
 
         elif anomaly_type == "oscillation":
             # 异常振荡: 高频周期波动

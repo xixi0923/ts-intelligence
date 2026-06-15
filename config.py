@@ -26,7 +26,7 @@ class FeatureConfig:
     enable_frequency: bool = True       # 启用频域特征
     enable_wavelet: bool = True         # 启用小波特征
     fft_n_components: int = 10         # FFT保留分量数
-    wavelet_type: str = "db4"          # 小波类型
+    wavelet_type: str = "haar"         # 小波类型（与实际实现一致）
     wavelet_level: int = 3             # 小波分解层数
 
 
@@ -46,6 +46,7 @@ class ModelConfig:
     transformer_num_layers: int = 2    # Transformer层数
     transformer_dim_feedforward: int = 128  # FFN维度
     transformer_dropout: float = 0.1   # Dropout率
+    transformer_latent_dim: int = 16   # Transformer潜在空间维度
 
     # 训练参数
     learning_rate: float = 1e-3        # 学习率

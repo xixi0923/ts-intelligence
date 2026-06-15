@@ -89,9 +89,6 @@ class TransformerAutoencoder(nn.Module):
         # 输出映射
         self.output_proj = nn.Linear(d_model, input_dim)
 
-        # 保存注意力权重
-        self._attention_weights = None
-
     def encode(self, x: torch.Tensor) -> torch.Tensor:
         """编码到潜在空间"""
         # 输入投影 + 位置编码
@@ -116,8 +113,11 @@ class TransformerAutoencoder(nn.Module):
         # 目标序列（用零初始化，自回归风格）
         tgt = torch.zeros_like(memory)
 
+        # 生成因果掩码防止信息泄漏
+        causal_mask = nn.Transformer.generate_square_subsequent_mask(seq_len).to(tgt.device)
+
         # Transformer解码
-        decoded = self.transformer_decoder(tgt, memory)  # (batch, seq_len, d_model)
+        decoded = self.transformer_decoder(tgt, memory, tgt_mask=causal_mask)  # (batch, seq_len, d_model)
 
         # 输出投影
         output = self.output_proj(decoded)  # (batch, seq_len, input_dim)
@@ -139,7 +139,6 @@ class TransformerAutoencoder(nn.Module):
 
     def get_reconstruction_error(self, x: torch.Tensor) -> torch.Tensor:
         """计算重建误差"""
-        self.eval()
         with torch.no_grad():
             reconstructed, _ = self.forward(x)
             error = (x - reconstructed) ** 2

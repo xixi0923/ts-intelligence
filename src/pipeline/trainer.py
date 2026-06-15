@@ -32,7 +32,8 @@ class TrainingPipeline:
         """准备训练数据"""
         # 生成合成数据
         generator = SyntheticDataGenerator(seed=42)
-        sample = generator.generate(scenario=scenario, length=2000, anomaly_ratio=0.05)
+        length = self.config.get("data_length", 2000)
+        sample = generator.generate(scenario=scenario, length=length, anomaly_ratio=0.05)
 
         # 标准化
         data_normalized = self.preprocessor.fit_normalize(sample.data)
@@ -44,6 +45,14 @@ class TrainingPipeline:
 
         # 划分数据集
         split = self.preprocessor.split_dataset(windows, window_labels)
+
+        # 过滤训练集中的异常数据（自编码器只应使用正常数据训练）
+        train_data, train_labels = split["train"]
+        if train_labels is not None:
+            normal_mask = train_labels == 0
+            train_data = train_data[normal_mask]
+            train_labels = train_labels[normal_mask]
+            split["train"] = (train_data, train_labels)
 
         # 转为Tensor
         result = {}
@@ -172,7 +181,7 @@ class TrainingPipeline:
         if self.model is not None:
             torch.save({
                 "model_state_dict": self.model.state_dict(),
-                "threshold": self.model._threshold,
+                "threshold": self.model.threshold,
                 "score_stats": self.model._score_stats,
                 "config": self.config,
             }, path)
@@ -182,6 +191,8 @@ class TrainingPipeline:
         checkpoint = torch.load(path, map_location=self.device, weights_only=False)
         self.build_model(input_dim)
         self.model.load_state_dict(checkpoint["model_state_dict"])
-        self.model._threshold = checkpoint.get("threshold")
+        # 从 checkpoint 恢复阈值到 buffer
+        if checkpoint.get("threshold") is not None:
+            self.model._threshold.fill_(checkpoint["threshold"])
         self.model._score_stats = checkpoint.get("score_stats")
         self.config = checkpoint.get("config", {})

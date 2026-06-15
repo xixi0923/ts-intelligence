@@ -52,8 +52,10 @@ class EnsembleAnomalyDetector(nn.Module):
             latent_dim=transformer_latent_dim,
         )
 
-        # 阈值（训练后自动计算）
-        self._threshold: Optional[float] = None
+        # 将阈值和归一化统计量注册为 buffer，随模型一起保存/加载
+        self.register_buffer("_threshold", torch.tensor(float('inf')))
+        self.register_buffer("_score_min", torch.tensor(float('inf')))
+        self.register_buffer("_score_max", torch.tensor(float('-inf')))
         self._score_stats: Optional[Dict] = None
 
     def forward(
@@ -136,9 +138,9 @@ class EnsembleAnomalyDetector(nn.Module):
             sample_scores = point_scores.mean(dim=(1, 2)).cpu().numpy()
 
             # 阈值判定
-            if self._threshold is None:
-                self._threshold = np.percentile(sample_scores, threshold_percentile)
-            anomaly_flags = (sample_scores > self._threshold).astype(int)
+            if self.threshold is None:
+                self._threshold.fill_(np.percentile(sample_scores, threshold_percentile))
+            anomaly_flags = (sample_scores > self._threshold.item()).astype(int)
 
         return anomaly_flags, point_scores_np
 
@@ -154,19 +156,29 @@ class EnsembleAnomalyDetector(nn.Module):
             threshold: 计算得到的阈值
         """
         scores = self.get_anomaly_scores(x_normal)
-        self._threshold = np.percentile(scores, percentile)
+        threshold = float(np.percentile(scores, percentile))
+        self._threshold.fill_(threshold)
+        self._score_min.fill_(float(np.min(scores)))
+        self._score_max.fill_(float(np.max(scores)))
         self._score_stats = {
             "mean": float(np.mean(scores)),
             "std": float(np.std(scores)),
             "min": float(np.min(scores)),
             "max": float(np.max(scores)),
-            "threshold": float(self._threshold),
+            "threshold": threshold,
         }
-        return self._threshold
+        return threshold
 
-    @staticmethod
-    def _normalize_scores(scores: np.ndarray) -> np.ndarray:
-        """Min-Max归一化到[0,1]"""
+    def _normalize_scores(self, scores: np.ndarray) -> np.ndarray:
+        """Min-Max归一化到[0,1]，优先使用训练时统计量保证跨批次一致性"""
+        min_val = self._score_min.item()
+        max_val = self._score_max.item()
+
+        # 训练时统计量可用时使用它们，保证推理结果可比
+        if min_val != float('inf') and max_val != float('-inf') and max_val - min_val > 1e-8:
+            return (scores - min_val) / (max_val - min_val)
+
+        # 训练阶段回退到批次级归一化
         min_val = scores.min()
         max_val = scores.max()
         if max_val - min_val < 1e-8:
@@ -175,7 +187,8 @@ class EnsembleAnomalyDetector(nn.Module):
 
     @property
     def threshold(self) -> Optional[float]:
-        return self._threshold
+        val = self._threshold.item()
+        return val if val != float('inf') else None
 
     @property
     def score_stats(self) -> Optional[Dict]:

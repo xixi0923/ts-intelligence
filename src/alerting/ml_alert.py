@@ -55,17 +55,29 @@ class MLAlertEngine:
         # 2. 规则评估
         rule_results = self.rule_engine.evaluate(data, ml_scores)
         triggered_rules = [r for r in rule_results if r.triggered]
+
+        # 3. 冷却检查：对每条触发的规则应用冷却逻辑
+        active_triggered = []
+        for r in triggered_rules:
+            key = r.rule_type
+            last_time = self._last_alert_time.get(key, -float('inf'))
+            if timestep - last_time >= self.cooldown_seconds:
+                active_triggered.append(r)
+                self._last_alert_time[key] = timestep
+        triggered_rules = active_triggered
+
+        # 4. 计算规则分数（基于冷却后仍活跃的规则）
         rule_score = max((r.score for r in triggered_rules), default=0.0)
 
-        # 3. 融合
+        # 5. 融合
         combined_score = (
             self.ml_weight * ml_score + self.rule_weight * rule_score
         )
 
-        # 4. 确定告警级别
+        # 6. 确定告警级别
         alert_level = self._score_to_level(combined_score)
 
-        # 5. 生成消息
+        # 7. 生成消息
         if alert_level == AlertLevel.NORMAL:
             message = "系统运行正常"
         else:

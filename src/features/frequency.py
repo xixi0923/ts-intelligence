@@ -38,6 +38,7 @@ class FrequencyFeatureExtractor:
         top_freqs = freqs[1:self.n_components + 1]
         if len(top_freqs) < self.n_components:
             top_freqs = np.pad(top_freqs, (0, self.n_components - len(top_freqs)))
+        features.extend(top_freqs)
 
         # 3. 主频位置（最大幅度的频率）
         dominant_freq_idx = np.argmax(fft_magnitude[1:]) + 1

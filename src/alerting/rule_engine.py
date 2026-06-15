@@ -92,12 +92,12 @@ class RuleEngine:
             for i in range(data.shape[1]):
                 col = data[:, i]
                 mean = np.mean(col)
-                std = np.std(col) + 1e-8
+                std = np.std(col, ddof=1) + 1e-8
                 ratio = np.max(np.abs(col - mean)) / std
                 max_spike_ratio = max(max_spike_ratio, ratio)
         else:
             mean = np.mean(data)
-            std = np.std(data) + 1e-8
+            std = np.std(data, ddof=1) + 1e-8
             max_spike_ratio = np.max(np.abs(data - mean)) / std
 
         triggered = max_spike_ratio > self.spike_threshold
@@ -123,13 +123,13 @@ class RuleEngine:
                 col = data[-self.trend_window:, i]
                 slope = self._compute_slope(col)
                 # 归一化斜率
-                std = np.std(data[:, i]) + 1e-8
+                std = np.std(data[:, i], ddof=1) + 1e-8
                 normalized_slope = abs(slope) / std
                 max_slope = max(max_slope, normalized_slope)
         else:
             window = data[-self.trend_window:]
             slope = self._compute_slope(window)
-            std = np.std(data) + 1e-8
+            std = np.std(data, ddof=1) + 1e-8
             max_slope = abs(slope) / std
 
         triggered = max_slope > self.trend_threshold
