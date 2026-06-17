@@ -473,6 +473,8 @@ const STATE = {
   isTraining: false,
   currentData: null,
   modelTrained: false,
+  offlineMode: false,      // 是否处于离线模拟模式
+  modelReady: false,       // 推理Pipeline是否可用
   charts: {},
   trainHistory: [],
   detectionResults: [],
@@ -501,14 +503,19 @@ async function checkBackend() {
     if (r.ok) {
       const d = await r.json();
       STATE.backendOnline = true;
-      STATE.modelTrained = d.is_trained;
+      STATE.modelTrained = d.is_trained || d.offline_mode;
+      STATE.offlineMode = d.offline_mode || false;
+      STATE.modelReady = d.model_ready || false;
       document.getElementById("statusDot").className = "status-dot status-online";
-      document.getElementById("statusText").textContent = "已连接";
+      // 区分真实训练 vs 离线模式
+      const modeText = d.offline_mode ? "离线模拟" : d.is_trained ? "已连接" : "已连接";
+      document.getElementById("statusText").textContent = modeText;
       updateModelStatus();
       return true;
     }
   } catch(e) {}
   STATE.backendOnline = false;
+  STATE.offlineMode = true;
   document.getElementById("statusDot").className = "status-dot status-offline";
   document.getElementById("statusText").textContent = "离线模式";
   return false;
@@ -518,9 +525,15 @@ function updateModelStatus() {
   const el = document.getElementById("metricModel");
   const sub = document.getElementById("metricModelSub");
   if (STATE.modelTrained) {
-    el.textContent = "已就绪";
-    el.style.color = "var(--green)";
-    sub.textContent = "模型已训练完成";
+    if (STATE.offlineMode) {
+      el.textContent = "离线模拟";
+      el.style.color = "var(--amber)";
+      sub.textContent = "模型未被真实调用（离线模式）";
+    } else {
+      el.textContent = "已就绪";
+      el.style.color = "var(--green)";
+      sub.textContent = "模型已训练完成，可正常推理";
+    }
   } else {
     el.textContent = "未训练";
     el.style.color = "var(--red)";
@@ -544,7 +557,12 @@ async function generateData() {
   const scenario = document.getElementById("scenarioSelect").value;
   if (STATE.backendOnline) {
     try {
-      const r = await fetch(`${API_BASE}/api/generate?scenario=${scenario}&length=1000&anomaly_ratio=0.1`);
+      // 【修复】改为POST请求，匹配后端新接口
+      const r = await fetch(`${API_BASE}/api/generate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scenario, length: 1000, anomaly_ratio: 0.1 }),
+      });
       STATE.currentData = await r.json();
     } catch(e) {
       STATE.currentData = generateOfflineData(scenario);
@@ -822,6 +840,8 @@ async function trainModel() {
 
     STATE.trainHistory = result.history || [];
     STATE.modelTrained = true;
+    STATE.offlineMode = result.offline_mode || false;
+    STATE.modelReady = result.model_used || false;
 
     // 更新UI
     updateModelStatus();
@@ -890,26 +910,36 @@ async function detectAnomaly() {
   try {
     let result;
     if (STATE.backendOnline) {
+      // 【修复】使用Pydantic验证的JSON body格式
       const r = await fetch(`${API_BASE}/api/predict`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ data: STATE.currentData.data }),
+        body: JSON.stringify({ data: STATE.currentData.data, scenario: STATE.currentData.scenario }),
       });
       result = await r.json();
+      // 【新增】根据返回的 model_used 标志判断是否真实推理
+      STATE.offlineMode = result.offline_mode || false;
+      STATE.modelReady = result.model_used || false;
     } else {
       result = simulateDetection();
+      STATE.offlineMode = true;
+      STATE.modelReady = false;
     }
 
     STATE.detectionResults = result.results || [];
     STATE.alerts = result.alerts || [];
 
     // 更新指标
-    const maxScore = Math.max(...STATE.detectionResults.map(r => r.anomaly_score));
+    const maxScore = STATE.detectionResults.length > 0
+      ? Math.max(...STATE.detectionResults.map(r => r.anomaly_score))
+      : 0;
     const anomalyCount = STATE.detectionResults.filter(r => r.is_anomaly).length;
     const threshold = STATE.detectionResults[0]?.threshold || 0;
 
     document.getElementById("metricScore").textContent = formatNum(maxScore);
-    document.getElementById("metricScoreSub").textContent = `阈值: ${formatNum(threshold)}`;
+    document.getElementById("metricScoreSub").textContent = STATE.offlineMode
+      ? "离线模拟结果（模型未真实调用）"
+      : `阈值: ${formatNum(threshold)}`;
     document.getElementById("metricWindows").textContent = STATE.detectionResults.length;
 
     // 确定告警级别
@@ -920,7 +950,9 @@ async function detectAnomaly() {
     else if (maxScore > 0.5) { alertLevel = "中"; alertClass = "alert-medium"; }
     else if (maxScore > 0.3) { alertLevel = "低"; alertClass = "alert-low"; }
     document.getElementById("metricAlert").innerHTML = `<span class="alert-badge ${alertClass}">${alertLevel}</span>`;
-    document.getElementById("metricAlertSub").textContent = `ML+规则融合判定`;
+    document.getElementById("metricAlertSub").textContent = STATE.offlineMode
+      ? "模拟数据（非模型推理）"
+      : "ML+规则融合判定";
 
     // 渲染图表
     renderAnomalyScoreChart();
